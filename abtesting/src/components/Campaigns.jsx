@@ -1,165 +1,310 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
-import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-
-const { Option } = Select;
+import { useAuth } from '../contexts/AuthContext';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Snackbar,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Visibility as VisibilityIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
+import { v4 as uuidv4 } from 'uuid';
+import { 
+  getCampaigns, 
+  createCampaign, 
+  deleteCampaign 
+} from '../services/campaignService';
 
 function Campaigns() {
-  const [campaigns, setCampaigns] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const [campaigns, setCampaigns] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    targetAudience: '',
+    startDate: '',
+    endDate: '',
+  });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load campaigns from localStorage
-    const savedCampaigns = JSON.parse(localStorage.getItem('campaigns') || '[]');
-    setCampaigns(savedCampaigns);
+    loadCampaigns();
   }, []);
 
-  const columns = [
-    {
-      title: 'Campaign Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button 
-            type="link" 
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/results?campaignId=${record.id}`)}
-          >
-            View Results
-          </Button>
-          <Popconfirm
-            title="Delete Campaign"
-            description="Are you sure you want to delete this campaign?"
-            onConfirm={() => handleDeleteCampaign(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  const handleCreateCampaign = (values) => {
-    const newCampaign = {
-      id: Date.now(),
-      ...values,
-      createdAt: new Date().toISOString(),
-      status: 'Active',
-    };
-
-    const updatedCampaigns = [...campaigns, newCampaign];
-    setCampaigns(updatedCampaigns);
-    localStorage.setItem('campaigns', JSON.stringify(updatedCampaigns));
-    
-    setIsModalVisible(false);
-    form.resetFields();
-    message.success('Campaign created successfully!');
+  const loadCampaigns = async () => {
+    try {
+      setLoading(true);
+      const data = await getCampaigns(currentUser.id);
+      setCampaigns(data || []);
+    } catch (error) {
+      console.error('Error loading campaigns:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load campaigns',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteCampaign = (campaignId) => {
-    const updatedCampaigns = campaigns.filter(campaign => campaign.id !== campaignId);
-    setCampaigns(updatedCampaigns);
-    localStorage.setItem('campaigns', JSON.stringify(updatedCampaigns));
-    message.success('Campaign deleted successfully!');
+  const handleCreateCampaign = async () => {
+    try {
+      setLoading(true);
+      const newCampaign = {
+        id: uuidv4(),
+        name: formData.name,
+        description: formData.description,
+        target_audience: formData.targetAudience,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+      };
+      
+      await createCampaign(newCampaign, currentUser.id);
+      
+      setSnackbar({
+        open: true,
+        message: 'Campaign created successfully!',
+        severity: 'success',
+      });
+      
+      setIsModalOpen(false);
+      setFormData({
+        name: '',
+        description: '',
+        targetAudience: '',
+        startDate: '',
+        endDate: '',
+      });
+      
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to create campaign',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId) => {
+    try {
+      setLoading(true);
+      await deleteCampaign(campaignId, currentUser.id);
+      
+      setSnackbar({
+        open: true,
+        message: 'Campaign deleted successfully!',
+        severity: 'success',
+      });
+      
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete campaign',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Campaigns</h1>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" component="h1">
+          Campaigns
+        </Typography>
         <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsModalVisible(true)}
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setIsModalOpen(true)}
+          disabled={loading}
         >
           Create Campaign
         </Button>
-      </div>
+      </Box>
 
-      <Table
-        columns={columns}
-        dataSource={campaigns}
-        rowKey="id"
-      />
+      {loading && campaigns.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Campaign Name</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Created At</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {campaigns.map((campaign) => (
+                <TableRow key={campaign.id}>
+                  <TableCell>{campaign.name}</TableCell>
+                  <TableCell>{campaign.status}</TableCell>
+                  <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      color="primary"
+                      onClick={() => navigate(`/results?campaignId=${campaign.id}`)}
+                      disabled={loading}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDeleteCampaign(campaign.id)}
+                      disabled={loading}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {campaigns.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    No campaigns found. Create your first campaign!
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
-      <Modal
-        title="Create New Campaign"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreateCampaign}
-        >
-          <Form.Item
+      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <DialogTitle>Create New Campaign</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
             name="name"
             label="Campaign Name"
-            rules={[{ required: true, message: 'Please input campaign name!' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="campaignUrl"
-            label="Campaign URL"
-            rules={[
-              { required: true, message: 'Please input campaign URL!' },
-              { type: 'url', message: 'Please enter a valid URL!' }
-            ]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="audience"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.name}
+            onChange={handleInputChange}
+            required
+          />
+          <TextField
+            margin="dense"
+            name="description"
+            label="Description"
+            type="text"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={3}
+            value={formData.description}
+            onChange={handleInputChange}
+          />
+          <TextField
+            margin="dense"
+            name="targetAudience"
             label="Target Audience"
-            rules={[{ required: true, message: 'Please select target audience!' }]}
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.targetAudience}
+            onChange={handleInputChange}
+          />
+          <TextField
+            margin="dense"
+            name="startDate"
+            label="Start Date"
+            type="date"
+            fullWidth
+            variant="outlined"
+            value={formData.startDate}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="dense"
+            name="endDate"
+            label="End Date"
+            type="date"
+            fullWidth
+            variant="outlined"
+            value={formData.endDate}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleCreateCampaign} 
+            variant="contained" 
+            disabled={!formData.name || loading}
           >
-            <Select>
-              <Option value="all">All Users</Option>
-              <Option value="new">New Users</Option>
-              <Option value="loyal">Loyal Customers</Option>
-            </Select>
-          </Form.Item>
+            {loading ? <CircularProgress size={24} /> : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                Create
-              </Button>
-              <Button onClick={() => setIsModalVisible(false)}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 

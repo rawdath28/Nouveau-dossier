@@ -1,18 +1,16 @@
-import { Row, Col, Card, Statistic, Typography, Divider, Space, Button } from 'antd';
+import { Grid, Card, CardContent, Typography, Button, Box, Divider } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect } from 'react';
 import {
-  ExperimentOutlined,
-  RocketOutlined,
-  MailOutlined,
-  LineChartOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+  Science as ScienceIcon,
+  RocketLaunch as RocketIcon,
+  Mail as MailIcon,
+  ShowChart as ChartIcon,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+  Add as AddIcon,
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
-const { Title, Text } = Typography;
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -86,179 +84,203 @@ function Dashboard() {
     ]);
   }, []);
 
+  const StatCard = ({ title, value, icon, trend, trendValue }) => (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box display="flex" alignItems="center" mb={1}>
+          {icon}
+          <Typography variant="h6" component="div" sx={{ ml: 1 }}>
+            {title}
+          </Typography>
+        </Box>
+        <Typography variant="h4" component="div">
+          {value}
+          {title === 'Average Open Rate' && '%'}
+        </Typography>
+        <Box display="flex" alignItems="center" mt={1}>
+          {trend === 'up' ? (
+            <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} />
+          ) : (
+            <TrendingDownIcon sx={{ color: 'error.main', mr: 0.5 }} />
+          )}
+          <Typography
+            variant="body2"
+            color={trend === 'up' ? 'success.main' : 'error.main'}
+          >
+            {trendValue}%
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div>
-          <Title level={2}>Dashboard</Title>
-          <Text type="secondary">Welcome to your A/B Testing Platform</Text>
-        </div>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />}
+    <Box sx={{ p: 3 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box>
+          <Typography variant="h4" component="h1">
+            Dashboard
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Welcome to your A/B Testing Platform
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
           onClick={() => navigate('/campaigns')}
         >
           New Campaign
         </Button>
-      </div>
+      </Box>
 
-      <Divider />
+      <Divider sx={{ my: 3 }} />
 
-      <Row gutter={[24, 24]} className="dashboard-stats">
-        <Col span={6}>
-          <Card hoverable className="stat-card">
-            <Statistic
-              title="Total Campaigns"
-              value={summary.totalCampaigns}
-              prefix={<ExperimentOutlined />}
-              suffix={
-                <span style={{ fontSize: '14px', color: '#52c41a' }}>
-                  <ArrowUpOutlined /> 12%
-                </span>
-              }
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card hoverable className="stat-card">
-            <Statistic
-              title="Active Tests"
-              value={summary.activeTests}
-              prefix={<RocketOutlined />}
-              suffix={
-                <span style={{ fontSize: '14px', color: '#52c41a' }}>
-                  <ArrowUpOutlined /> 8%
-                </span>
-              }
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card hoverable className="stat-card">
-            <Statistic
-              title="Total Emails Sent"
-              value={summary.totalEmails}
-              prefix={<MailOutlined />}
-              suffix={
-                <span style={{ fontSize: '14px', color: '#52c41a' }}>
-                  <ArrowUpOutlined /> 15%
-                </span>
-              }
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card hoverable className="stat-card">
-            <Statistic
-              title="Average Open Rate"
-              value={summary.avgOpenRate}
-              suffix="%"
-              prefix={<LineChartOutlined />}
-              valueStyle={{ color: summary.avgOpenRate > 40 ? '#52c41a' : '#f5222d' }}
-              suffix={
-                <span style={{ fontSize: '14px', color: summary.avgOpenRate > 40 ? '#52c41a' : '#f5222d' }}>
-                  {summary.avgOpenRate > 40 ? <ArrowUpOutlined /> : <ArrowDownOutlined />} 5%
-                </span>
-              }
-            />
-          </Card>
-        </Col>
-      </Row>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Total Campaigns"
+            value={summary.totalCampaigns}
+            icon={<ScienceIcon color="primary" />}
+            trend="up"
+            trendValue={12}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Active Tests"
+            value={summary.activeTests}
+            icon={<RocketIcon color="primary" />}
+            trend="up"
+            trendValue={8}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Total Emails Sent"
+            value={summary.totalEmails}
+            icon={<MailIcon color="primary" />}
+            trend="up"
+            trendValue={15}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Average Open Rate"
+            value={summary.avgOpenRate}
+            icon={<ChartIcon color="primary" />}
+            trend={summary.avgOpenRate > 40 ? "up" : "down"}
+            trendValue={5}
+          />
+        </Grid>
+      </Grid>
 
-      <Row gutter={[24, 24]} style={{ marginTop: '24px' }}>
-        <Col span={16}>
-          <Card className="chart-container" title="Performance Trends">
-            <div style={{ height: 400, width: '100%' }}>
-              <ResponsiveContainer>
-                <LineChart
-                  data={performanceData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date"
-                    padding={{ left: 30, right: 30 }}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="openRate" 
-                    stroke="#8884d8" 
-                    name="Open Rate %" 
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="clickRate" 
-                    stroke="#82ca9d" 
-                    name="Click Rate %"
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="conversionRate" 
-                    stroke="#ffc658" 
-                    name="Conversion Rate %"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="chart-container" title="Device Distribution">
-            <div style={{ height: 400, width: '100%' }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={deviceData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Performance Trends
+              </Typography>
+              <Box sx={{ height: 400, width: '100%' }}>
+                <ResponsiveContainer>
+                  <LineChart
+                    data={performanceData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                   >
-                    {deviceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="openRate"
+                      stroke="#8884d8"
+                      name="Open Rate %"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="clickRate"
+                      stroke="#82ca9d"
+                      name="Click Rate %"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="conversionRate"
+                      stroke="#ffc658"
+                      name="Conversion Rate %"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-      </Row>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Device Distribution
+              </Typography>
+              <Box sx={{ height: 400, width: '100%' }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={deviceData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {deviceData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      <Row gutter={[24, 24]} style={{ marginTop: '24px' }}>
-        <Col span={24}>
-          <Card className="chart-container" title="Performance by Time of Day">
-            <div style={{ height: 400, width: '100%' }}>
-              <ResponsiveContainer>
-                <BarChart
-                  data={timeData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="opens" fill="#8884d8" name="Opens" />
-                  <Bar dataKey="clicks" fill="#82ca9d" name="Clicks" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+      <Grid container spacing={3} sx={{ mt: 3 }}>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Performance by Time of Day
+              </Typography>
+              <Box sx={{ height: 400, width: '100%' }}>
+                <ResponsiveContainer>
+                  <BarChart
+                    data={timeData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="time" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="opens" fill="#8884d8" name="Opens" />
+                    <Bar dataKey="clicks" fill="#82ca9d" name="Clicks" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-      </Row>
-    </div>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }
 

@@ -1,176 +1,294 @@
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Divider, Switch, Select, Space, Row, Col, message } from 'antd';
-import { SaveOutlined, MailOutlined, ApiOutlined, BellOutlined, LockOutlined } from '@ant-design/icons';
-
-const { Title, Text } = Typography;
-const { Option } = Select;
+import {
+  TextField,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  Divider,
+  Switch,
+  Select,
+  MenuItem,
+  Grid,
+  Box,
+  FormControlLabel,
+  FormControl,
+  InputLabel,
+  Alert,
+  Snackbar,
+} from '@mui/material';
+import {
+  Save as SaveIcon,
+  Mail as MailIcon,
+  Api as ApiIcon,
+  Notifications as NotificationsIcon,
+  Lock as LockIcon,
+} from '@mui/icons-material';
 
 function Settings() {
-  const [form] = Form.useForm();
+  const [formData, setFormData] = useState({
+    smtpServer: 'smtp.example.com',
+    smtpPort: '587',
+    senderEmail: 'noreply@example.com',
+    senderName: 'A/B Testing Platform',
+    apiKey: '••••••••••••••••',
+    notifications: true,
+    emailFrequency: 'daily',
+  });
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  const onFinish = (values) => {
+  const handleInputChange = (e) => {
+    const { name, value, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'notifications' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
     setLoading(true);
     // Simulate API call
     setTimeout(() => {
-      localStorage.setItem('settings', JSON.stringify(values));
+      localStorage.setItem('settings', JSON.stringify(formData));
       setLoading(false);
-      message.success('Settings saved successfully');
+      setSnackbar({
+        open: true,
+        message: 'Settings saved successfully',
+        severity: 'success',
+      });
     }, 1000);
   };
 
+  const handleReset = () => {
+    setFormData({
+      smtpServer: 'smtp.example.com',
+      smtpPort: '587',
+      senderEmail: 'noreply@example.com',
+      senderName: 'A/B Testing Platform',
+      apiKey: '••••••••••••••••',
+      notifications: true,
+      emailFrequency: 'daily',
+    });
+  };
+
   return (
-    <div className="settings-container">
-      <div className="settings-header">
-        <div>
-          <Title level={2}>Settings</Title>
-          <Text type="secondary">Configure your A/B Testing Platform settings</Text>
-        </div>
-      </div>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          Settings
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          Configure your A/B Testing Platform settings
+        </Typography>
+      </Box>
 
-      <Divider />
+      <Divider sx={{ my: 3 }} />
 
-      <Row gutter={[24, 24]}>
-        <Col span={16}>
-          <Card title="Email Configuration" className="settings-card">
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={onFinish}
-              initialValues={{
-                smtpServer: 'smtp.example.com',
-                smtpPort: '587',
-                senderEmail: 'noreply@example.com',
-                senderName: 'A/B Testing Platform',
-                apiKey: '••••••••••••••••',
-                notifications: true,
-                emailFrequency: 'daily',
-              }}
-            >
-              <Row gutter={[24, 24]}>
-                <Col span={12}>
-                  <Form.Item
-                    label="SMTP Server"
-                    name="smtpServer"
-                    rules={[{ required: true, message: 'Please input your SMTP server!' }]}
-                  >
-                    <Input prefix={<MailOutlined />} placeholder="smtp.example.com" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="SMTP Port"
-                    name="smtpPort"
-                    rules={[{ required: true, message: 'Please input your SMTP port!' }]}
-                  >
-                    <Input prefix={<ApiOutlined />} placeholder="587" />
-                  </Form.Item>
-                </Col>
-              </Row>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Email Configuration
+              </Typography>
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="SMTP Server"
+                      name="smtpServer"
+                      value={formData.smtpServer}
+                      onChange={handleInputChange}
+                      required
+                      InputProps={{
+                        startAdornment: <MailIcon sx={{ mr: 1, color: 'action.active' }} />,
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="SMTP Port"
+                      name="smtpPort"
+                      value={formData.smtpPort}
+                      onChange={handleInputChange}
+                      required
+                      InputProps={{
+                        startAdornment: <ApiIcon sx={{ mr: 1, color: 'action.active' }} />,
+                      }}
+                    />
+                  </Grid>
 
-              <Row gutter={[24, 24]}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Sender Email"
-                    name="senderEmail"
-                    rules={[
-                      { required: true, message: 'Please input your sender email!' },
-                      { type: 'email', message: 'Please enter a valid email!' }
-                    ]}
-                  >
-                    <Input prefix={<MailOutlined />} placeholder="noreply@example.com" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="Sender Name"
-                    name="senderName"
-                    rules={[{ required: true, message: 'Please input your sender name!' }]}
-                  >
-                    <Input prefix={<MailOutlined />} placeholder="A/B Testing Platform" />
-                  </Form.Item>
-                </Col>
-              </Row>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Sender Email"
+                      name="senderEmail"
+                      type="email"
+                      value={formData.senderEmail}
+                      onChange={handleInputChange}
+                      required
+                      InputProps={{
+                        startAdornment: <MailIcon sx={{ mr: 1, color: 'action.active' }} />,
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Sender Name"
+                      name="senderName"
+                      value={formData.senderName}
+                      onChange={handleInputChange}
+                      required
+                      InputProps={{
+                        startAdornment: <MailIcon sx={{ mr: 1, color: 'action.active' }} />,
+                      }}
+                    />
+                  </Grid>
 
-              <Form.Item
-                label="API Key"
-                name="apiKey"
-                rules={[{ required: true, message: 'Please input your API key!' }]}
-              >
-                <Input.Password prefix={<LockOutlined />} placeholder="Enter your API key" />
-              </Form.Item>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="API Key"
+                      name="apiKey"
+                      type="password"
+                      value={formData.apiKey}
+                      onChange={handleInputChange}
+                      required
+                      InputProps={{
+                        startAdornment: <LockIcon sx={{ mr: 1, color: 'action.active' }} />,
+                      }}
+                    />
+                  </Grid>
 
-              <Divider />
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                  </Grid>
 
-              <Row gutter={[24, 24]}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Email Notifications"
-                    name="notifications"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="Notification Frequency"
-                    name="emailFrequency"
-                  >
-                    <Select>
-                      <Option value="realtime">Real-time</Option>
-                      <Option value="daily">Daily</Option>
-                      <Option value="weekly">Weekly</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.notifications}
+                          onChange={handleInputChange}
+                          name="notifications"
+                        />
+                      }
+                      label="Email Notifications"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Notification Frequency</InputLabel>
+                      <Select
+                        name="emailFrequency"
+                        value={formData.emailFrequency}
+                        label="Notification Frequency"
+                        onChange={handleInputChange}
+                      >
+                        <MenuItem value="realtime">Real-time</MenuItem>
+                        <MenuItem value="daily">Daily</MenuItem>
+                        <MenuItem value="weekly">Weekly</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
 
-              <Form.Item>
-                <Space>
-                  <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
-                    Save Settings
-                  </Button>
-                  <Button onClick={() => form.resetFields()}>
-                    Reset
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
+                  <Grid item xs={12}>
+                    <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                      <Button
+                        variant="contained"
+                        type="submit"
+                        disabled={loading}
+                        startIcon={<SaveIcon />}
+                      >
+                        Save Settings
+                      </Button>
+                      <Button onClick={handleReset}>
+                        Reset
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </form>
+            </CardContent>
           </Card>
-        </Col>
+        </Grid>
 
-        <Col span={8}>
-          <Card title="Quick Actions" className="settings-card">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button icon={<MailOutlined />} block>
-                Test Email Configuration
-              </Button>
-              <Button icon={<ApiOutlined />} block>
-                Validate API Key
-              </Button>
-              <Button icon={<BellOutlined />} block>
-                Send Test Notification
-              </Button>
-            </Space>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Quick Actions
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<MailIcon />}
+                  fullWidth
+                >
+                  Test Email Configuration
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<ApiIcon />}
+                  fullWidth
+                >
+                  Validate API Key
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<NotificationsIcon />}
+                  fullWidth
+                >
+                  Send Test Notification
+                </Button>
+              </Box>
+            </CardContent>
           </Card>
 
-          <Card title="Help & Support" className="settings-card" style={{ marginTop: '24px' }}>
-            <Text type="secondary">
-              Need help with your settings? Check out our documentation or contact support.
-            </Text>
-            <Space direction="vertical" style={{ width: '100%', marginTop: '16px' }}>
-              <Button type="link" block>
-                View Documentation
-              </Button>
-              <Button type="link" block>
-                Contact Support
-              </Button>
-            </Space>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Help & Support
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Need help with your settings? Check out our documentation or contact support.
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Button variant="text" fullWidth>
+                  View Documentation
+                </Button>
+                <Button variant="text" fullWidth>
+                  Contact Support
+                </Button>
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-      </Row>
-    </div>
+        </Grid>
+      </Grid>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 

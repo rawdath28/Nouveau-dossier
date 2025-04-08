@@ -1,12 +1,66 @@
-# React + Vite
+# A/B Testing Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern A/B testing platform for email marketing campaigns built with React, Material-UI, and Supabase.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- User authentication with Supabase
+- Dashboard with performance metrics
+- Campaign management
+- A/B test results visualization
+- Settings configuration
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+- A Supabase account
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
+3. Set up Supabase:
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Get your project URL and anon key from the project settings
+   - Update the `src/supabaseClient.js` file with your Supabase credentials:
+     ```javascript
+     const supabaseUrl = 'YOUR_SUPABASE_URL';
+     const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+     ```
+
+### Running the Application
+
+```
+npm run dev
+```
+
+The application will be available at http://localhost:5173
+
+## Authentication
+
+The application uses Supabase for authentication. Users can:
+
+- Sign up with email and password
+- Sign in with email and password
+- Reset their password
+- Sign out
+
+## Project Structure
+
+- `src/components/` - React components
+- `src/contexts/` - React contexts (including authentication)
+- `src/supabaseClient.js` - Supabase client configuration
+
+## Technologies Used
+
+- React
+- Material-UI
+- Supabase
+- React Router
+- Recharts (for data visualization)

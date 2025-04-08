@@ -1,198 +1,299 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Table, Statistic, Empty } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { useSearchParams } from 'react-router-dom';
-
-const { Option } = Select;
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
+import { useAuth } from '../contexts/AuthContext';
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  CircularProgress,
+  Alert,
+  Snackbar,
+} from '@mui/material';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { 
+  getCampaignById, 
+  getCampaignResults, 
+  saveCampaignResults 
+} from '../services/campaignService';
 
 function Results() {
   const [searchParams] = useSearchParams();
-  const [selectedCampaign, setSelectedCampaign] = useState(searchParams.get('campaignId'));
-  const [campaigns, setCampaigns] = useState([]);
+  const { currentUser } = useAuth();
+  const campaignId = searchParams.get('campaignId');
+  
+  const [campaign, setCampaign] = useState(null);
   const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   useEffect(() => {
-    // Load campaigns from localStorage
-    const savedCampaigns = JSON.parse(localStorage.getItem('campaigns') || '[]');
-    setCampaigns(savedCampaigns);
-  }, []);
-
-  useEffect(() => {
-    if (selectedCampaign) {
-      // Load results from localStorage
-      const savedResults = JSON.parse(localStorage.getItem(`results_${selectedCampaign}`) || 'null');
-      if (!savedResults) {
-        // Generate mock results if none exist
-        const mockResults = {
-          variants: [
-            { name: 'Variant A', openRate: 45, clickRate: 18, conversionRate: 9 },
-            { name: 'Variant B', openRate: 52, clickRate: 22, conversionRate: 12 },
-          ],
-          deviceStats: [
-            { name: 'Desktop', value: 60 },
-            { name: 'Mobile', value: 30 },
-            { name: 'Tablet', value: 10 },
-          ],
-          timeData: [
-            { time: 'Morning', opens: 35, clicks: 15 },
-            { time: 'Afternoon', opens: 45, clicks: 20 },
-            { time: 'Evening', opens: 20, clicks: 10 },
-          ],
-        };
-        localStorage.setItem(`results_${selectedCampaign}`, JSON.stringify(mockResults));
-        setResults(mockResults);
-      } else {
-        setResults(savedResults);
-      }
+    if (campaignId) {
+      loadCampaignData();
     }
-  }, [selectedCampaign]);
+  }, [campaignId]);
 
-  const columns = [
-    {
-      title: 'Metric',
-      dataIndex: 'metric',
-      key: 'metric',
-    },
-    {
-      title: 'Variant A',
-      dataIndex: 'variantA',
-      key: 'variantA',
-    },
-    {
-      title: 'Variant B',
-      dataIndex: 'variantB',
-      key: 'variantB',
-    },
-    {
-      title: 'Difference',
-      dataIndex: 'difference',
-      key: 'difference',
-    },
-  ];
+  const loadCampaignData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const data = results ? [
-    {
-      key: '1',
-      metric: 'Open Rate',
-      variantA: `${results.variants[0].openRate}%`,
-      variantB: `${results.variants[1].openRate}%`,
-      difference: `${results.variants[1].openRate - results.variants[0].openRate}%`,
-    },
-    {
-      key: '2',
-      metric: 'Click Rate',
-      variantA: `${results.variants[0].clickRate}%`,
-      variantB: `${results.variants[1].clickRate}%`,
-      difference: `${results.variants[1].clickRate - results.variants[0].clickRate}%`,
-    },
-    {
-      key: '3',
-      metric: 'Conversion Rate',
-      variantA: `${results.variants[0].conversionRate}%`,
-      variantB: `${results.variants[1].conversionRate}%`,
-      difference: `${results.variants[1].conversionRate - results.variants[0].conversionRate}%`,
-    },
-  ] : [];
+      // Load campaign details
+      const campaignData = await getCampaignById(campaignId, currentUser.id);
+      if (!campaignData) {
+        throw new Error('Campaign not found');
+      }
+      setCampaign(campaignData);
 
-  if (!selectedCampaign) {
+      // Load campaign results
+      const resultsData = await getCampaignResults(campaignId, currentUser.id);
+      setResults(resultsData || generateInitialResults());
+    } catch (err) {
+      console.error('Error loading campaign data:', err);
+      setError(err.message);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load campaign data',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateInitialResults = () => {
+    return {
+      variant_a: {
+        views: 0,
+        clicks: 0,
+        conversions: 0,
+      },
+      variant_b: {
+        views: 0,
+        clicks: 0,
+        conversions: 0,
+      },
+    };
+  };
+
+  const calculateMetrics = (variant) => {
+    if (!results || !results[variant]) return { ctr: 0, cvr: 0 };
+    
+    const { views, clicks, conversions } = results[variant];
+    const ctr = views > 0 ? (clicks / views) * 100 : 0;
+    const cvr = clicks > 0 ? (conversions / clicks) * 100 : 0;
+    
+    return { ctr, cvr };
+  };
+
+  const handleMetricUpdate = async (variant, metric, value) => {
+    try {
+      setLoading(true);
+      const newResults = {
+        ...results,
+        [variant]: {
+          ...results[variant],
+          [metric]: Math.max(0, parseInt(value) || 0),
+        },
+      };
+      
+      await saveCampaignResults(campaignId, newResults, currentUser.id);
+      setResults(newResults);
+      
+      setSnackbar({
+        open: true,
+        message: 'Results updated successfully!',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Error updating results:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to update results',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !campaign) {
     return (
-      <div>
-        <h1>Results</h1>
-        <Empty description="Please select a campaign to view results" />
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning">No campaign selected</Alert>
+      </Box>
+    );
+  }
+
+  const chartData = [
+    {
+      name: 'Variant A',
+      views: results?.variant_a.views || 0,
+      clicks: results?.variant_a.clicks || 0,
+      conversions: results?.variant_a.conversions || 0,
+    },
+    {
+      name: 'Variant B',
+      views: results?.variant_b.views || 0,
+      clicks: results?.variant_b.clicks || 0,
+      conversions: results?.variant_b.conversions || 0,
+    },
+  ];
+
+  const variantAMetrics = calculateMetrics('variant_a');
+  const variantBMetrics = calculateMetrics('variant_b');
+
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <h1>Results</h1>
-        <Select
-          style={{ width: 300 }}
-          placeholder="Select a campaign"
-          value={selectedCampaign}
-          onChange={setSelectedCampaign}
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        {campaign.name} - Results
+      </Typography>
+      
+      <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+        {campaign.description}
+      </Typography>
+
+      <Grid container spacing={3} sx={{ mt: 2 }}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Variant A Metrics
+            </Typography>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                CTR: {variantAMetrics.ctr.toFixed(2)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                CVR: {variantAMetrics.cvr.toFixed(2)}%
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <input
+                type="number"
+                value={results?.variant_a.views || 0}
+                onChange={(e) => handleMetricUpdate('variant_a', 'views', e.target.value)}
+                placeholder="Views"
+                disabled={loading}
+              />
+              <input
+                type="number"
+                value={results?.variant_a.clicks || 0}
+                onChange={(e) => handleMetricUpdate('variant_a', 'clicks', e.target.value)}
+                placeholder="Clicks"
+                disabled={loading}
+              />
+              <input
+                type="number"
+                value={results?.variant_a.conversions || 0}
+                onChange={(e) => handleMetricUpdate('variant_a', 'conversions', e.target.value)}
+                placeholder="Conversions"
+                disabled={loading}
+              />
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Variant B Metrics
+            </Typography>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                CTR: {variantBMetrics.ctr.toFixed(2)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                CVR: {variantBMetrics.cvr.toFixed(2)}%
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <input
+                type="number"
+                value={results?.variant_b.views || 0}
+                onChange={(e) => handleMetricUpdate('variant_b', 'views', e.target.value)}
+                placeholder="Views"
+                disabled={loading}
+              />
+              <input
+                type="number"
+                value={results?.variant_b.clicks || 0}
+                onChange={(e) => handleMetricUpdate('variant_b', 'clicks', e.target.value)}
+                placeholder="Clicks"
+                disabled={loading}
+              />
+              <input
+                type="number"
+                value={results?.variant_b.conversions || 0}
+                onChange={(e) => handleMetricUpdate('variant_b', 'conversions', e.target.value)}
+                placeholder="Conversions"
+                disabled={loading}
+              />
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, height: 400 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="views" fill="#8884d8" />
+                <Bar dataKey="clicks" fill="#82ca9d" />
+                <Bar dataKey="conversions" fill="#ffc658" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
         >
-          {campaigns.map(campaign => (
-            <Option key={campaign.id} value={campaign.id}>
-              {campaign.name}
-            </Option>
-          ))}
-        </Select>
-      </div>
-
-      <Row gutter={[16, 16]}>
-        <Col span={24}>
-          <Card title="A/B Test Results">
-            <Table columns={columns} dataSource={data} pagination={false} />
-          </Card>
-        </Col>
-
-        <Col span={12}>
-          <Card title="Performance by Variant">
-            <BarChart
-              width={500}
-              height={300}
-              data={results?.variants}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="openRate" fill="#8884d8" name="Open Rate %" />
-              <Bar dataKey="clickRate" fill="#82ca9d" name="Click Rate %" />
-              <Bar dataKey="conversionRate" fill="#ffc658" name="Conversion Rate %" />
-            </BarChart>
-          </Card>
-        </Col>
-
-        <Col span={12}>
-          <Card title="Device Distribution">
-            <PieChart width={500} height={300}>
-              <Pie
-                data={results?.deviceStats}
-                cx={250}
-                cy={150}
-                labelLine={false}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {results?.deviceStats.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </Card>
-        </Col>
-
-        <Col span={24}>
-          <Card title="Performance by Time of Day">
-            <BarChart
-              width={1000}
-              height={300}
-              data={results?.timeData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="opens" fill="#8884d8" name="Opens" />
-              <Bar dataKey="clicks" fill="#82ca9d" name="Clicks" />
-            </BarChart>
-          </Card>
-        </Col>
-      </Row>
-    </div>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 

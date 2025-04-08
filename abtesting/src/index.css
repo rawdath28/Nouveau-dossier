@@ -2,7 +2,7 @@
   --max-width: 1440px;
   --header-height: 64px;
   --sidebar-width: 250px;
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -33,7 +33,7 @@ body {
   min-height: 100vh;
   min-width: 1024px;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: auto;
@@ -128,16 +128,16 @@ button:focus-visible {
 
 .chart-container {
   background: white;
-  padding: 24px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 24px;
 }
 
 .data-table {
   margin-top: 24px;
 }
 
-/* Custom scrollbar for desktop */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -206,12 +206,6 @@ button:focus-visible {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.chart-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
 /* Settings Styles */
 .settings-container {
   padding: 24px;
@@ -262,5 +256,9 @@ button:focus-visible {
 
   .stat-card {
     margin-bottom: 16px;
+  }
+
+  .chart-container {
+    padding: 16px;
   }
 }
