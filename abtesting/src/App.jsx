@@ -7,6 +7,8 @@ import {
   Settings as SettingsIcon,
   Computer as ComputerIcon,
   Logout as LogoutIcon,
+  Person as PersonIcon,
+  Compare as CompareIcon,
 } from '@mui/icons-material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -15,18 +17,121 @@ import Campaigns from './components/Campaigns';
 import Results from './components/Results';
 import Settings from './components/Settings';
 import Login from './components/Login';
+import Profile from './components/Profile';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import EmailComparison from './components/EmailComparison';
 
 const drawerWidth = 250;
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#2563eb', // Blue 600
+      light: '#60a5fa', // Blue 400
+      dark: '#1e40af', // Blue 800
     },
     secondary: {
-      main: '#dc004e',
+      main: '#7c3aed', // Violet 600
+      light: '#a78bfa', // Violet 400
+      dark: '#5b21b6', // Violet 800
+    },
+    background: {
+      default: '#f8fafc', // Slate 50
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#1e293b', // Slate 800
+      secondary: '#64748b', // Slate 500
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontSize: '2.5rem',
+      fontWeight: 600,
+    },
+    h2: {
+      fontSize: '2rem',
+      fontWeight: 600,
+    },
+    h3: {
+      fontSize: '1.75rem',
+      fontWeight: 600,
+    },
+    h4: {
+      fontSize: '1.5rem',
+      fontWeight: 600,
+    },
+    h5: {
+      fontSize: '1.25rem',
+      fontWeight: 600,
+    },
+    h6: {
+      fontSize: '1rem',
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff',
+          color: '#1e293b',
+          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#ffffff',
+          borderRight: '1px solid #e2e8f0',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '8px',
+          textTransform: 'none',
+          fontWeight: 500,
+          padding: '8px 16px',
+        },
+        contained: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          },
+        },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          borderRadius: '8px',
+          margin: '4px 8px',
+          '&.Mui-selected': {
+            backgroundColor: '#f1f5f9',
+            '&:hover': {
+              backgroundColor: '#f1f5f9',
+            },
+          },
+        },
+      },
     },
   },
 });
@@ -41,7 +146,9 @@ function AppContent() {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
     { text: 'Campaigns', icon: <CampaignIcon />, path: '/campaigns' },
     { text: 'Results', icon: <AssessmentIcon />, path: '/results' },
+    { text: 'Email Comparison', icon: <CompareIcon />, path: '/email-comparison' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { text: 'Profile', icon: <PersonIcon />, path: '/profile' },
   ];
 
   const handleLogout = async () => {
@@ -137,7 +244,10 @@ function AppContent() {
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/campaigns" element={<PrivateRoute><Campaigns /></PrivateRoute>} />
           <Route path="/results" element={<PrivateRoute><Results /></PrivateRoute>} />
+          <Route path="/email-comparison" element={<PrivateRoute><EmailComparison /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/login" element={<Login />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Box>

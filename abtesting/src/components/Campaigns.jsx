@@ -1,143 +1,84 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import {
-  Box,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Typography,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  Box,
+  Typography,
   IconButton,
-  Snackbar,
   Alert,
-  CircularProgress,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Visibility as VisibilityIcon,
   Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
-import { v4 as uuidv4 } from 'uuid';
-import { 
-  getCampaigns, 
-  createCampaign, 
-  deleteCampaign 
-} from '../services/campaignService';
+import { useNavigate } from 'react-router-dom';
 
 function Campaigns() {
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    targetAudience: '',
-    startDate: '',
-    endDate: '',
+    campaignUrl: '',
+    audience: '',
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success',
   });
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadCampaigns();
+    // Load campaigns from localStorage
+    const savedCampaigns = JSON.parse(localStorage.getItem('campaigns') || '[]');
+    setCampaigns(savedCampaigns);
   }, []);
 
-  const loadCampaigns = async () => {
-    try {
-      setLoading(true);
-      const data = await getCampaigns(currentUser.id);
-      setCampaigns(data || []);
-    } catch (error) {
-      console.error('Error loading campaigns:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load campaigns',
-        severity: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleCreateCampaign = (e) => {
+    e.preventDefault();
+    const newCampaign = {
+      id: Date.now(),
+      ...formData,
+      createdAt: new Date().toISOString(),
+      status: 'Active',
+    };
+
+    const updatedCampaigns = [...campaigns, newCampaign];
+    setCampaigns(updatedCampaigns);
+    localStorage.setItem('campaigns', JSON.stringify(updatedCampaigns));
+    
+    setIsModalOpen(false);
+    setFormData({ name: '', campaignUrl: '', audience: '' });
+    setSnackbar({
+      open: true,
+      message: 'Campaign created successfully!',
+      severity: 'success',
+    });
   };
 
-  const handleCreateCampaign = async () => {
-    try {
-      setLoading(true);
-      const newCampaign = {
-        id: uuidv4(),
-        name: formData.name,
-        description: formData.description,
-        target_audience: formData.targetAudience,
-        start_date: formData.startDate,
-        end_date: formData.endDate,
-      };
-      
-      await createCampaign(newCampaign, currentUser.id);
-      
-      setSnackbar({
-        open: true,
-        message: 'Campaign created successfully!',
-        severity: 'success',
-      });
-      
-      setIsModalOpen(false);
-      setFormData({
-        name: '',
-        description: '',
-        targetAudience: '',
-        startDate: '',
-        endDate: '',
-      });
-      
-      loadCampaigns();
-    } catch (error) {
-      console.error('Error creating campaign:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to create campaign',
-        severity: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteCampaign = async (campaignId) => {
-    try {
-      setLoading(true);
-      await deleteCampaign(campaignId, currentUser.id);
-      
-      setSnackbar({
-        open: true,
-        message: 'Campaign deleted successfully!',
-        severity: 'success',
-      });
-      
-      loadCampaigns();
-    } catch (error) {
-      console.error('Error deleting campaign:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete campaign',
-        severity: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteCampaign = (campaignId) => {
+    const updatedCampaigns = campaigns.filter(campaign => campaign.id !== campaignId);
+    setCampaigns(updatedCampaigns);
+    localStorage.setItem('campaigns', JSON.stringify(updatedCampaigns));
+    setSnackbar({
+      open: true,
+      message: 'Campaign deleted successfully!',
+      severity: 'success',
+    });
   };
 
   const handleInputChange = (e) => {
@@ -158,137 +99,89 @@ function Campaigns() {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setIsModalOpen(true)}
-          disabled={loading}
         >
           Create Campaign
         </Button>
       </Box>
 
-      {loading && campaigns.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Campaign Name</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Created At</TableCell>
-                <TableCell>Actions</TableCell>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Campaign Name</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {campaigns.map((campaign) => (
+              <TableRow key={campaign.id}>
+                <TableCell>{campaign.name}</TableCell>
+                <TableCell>{campaign.status}</TableCell>
+                <TableCell>{new Date(campaign.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <IconButton
+                    color="primary"
+                    onClick={() => navigate(`/results?campaignId=${campaign.id}`)}
+                  >
+                    <VisibilityIcon />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDeleteCampaign(campaign.id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {campaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
-                  <TableCell>{campaign.name}</TableCell>
-                  <TableCell>{campaign.status}</TableCell>
-                  <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      color="primary"
-                      onClick={() => navigate(`/results?campaignId=${campaign.id}`)}
-                      disabled={loading}
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDeleteCampaign(campaign.id)}
-                      disabled={loading}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {campaigns.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    No campaigns found. Create your first campaign!
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Campaign</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Campaign Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-          />
-          <TextField
-            margin="dense"
-            name="description"
-            label="Description"
-            type="text"
-            fullWidth
-            variant="outlined"
-            multiline
-            rows={3}
-            value={formData.description}
-            onChange={handleInputChange}
-          />
-          <TextField
-            margin="dense"
-            name="targetAudience"
-            label="Target Audience"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={formData.targetAudience}
-            onChange={handleInputChange}
-          />
-          <TextField
-            margin="dense"
-            name="startDate"
-            label="Start Date"
-            type="date"
-            fullWidth
-            variant="outlined"
-            value={formData.startDate}
-            onChange={handleInputChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            margin="dense"
-            name="endDate"
-            label="End Date"
-            type="date"
-            fullWidth
-            variant="outlined"
-            value={formData.endDate}
-            onChange={handleInputChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleCreateCampaign} 
-            variant="contained" 
-            disabled={!formData.name || loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Create'}
-          </Button>
-        </DialogActions>
+        <form onSubmit={handleCreateCampaign}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Campaign Name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Campaign URL"
+              name="campaignUrl"
+              type="url"
+              value={formData.campaignUrl}
+              onChange={handleInputChange}
+              required
+              margin="normal"
+            />
+            <Select
+              fullWidth
+              label="Target Audience"
+              name="audience"
+              value={formData.audience}
+              onChange={handleInputChange}
+              required
+              margin="normal"
+            >
+              <MenuItem value="all">All Users</MenuItem>
+              <MenuItem value="new">New Users</MenuItem>
+              <MenuItem value="loyal">Loyal Customers</MenuItem>
+            </Select>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">Create</Button>
+          </DialogActions>
+        </form>
       </Dialog>
 
       <Snackbar
@@ -296,8 +189,8 @@ function Campaigns() {
         autoHideDuration={6000}
         onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       >
-        <Alert 
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
